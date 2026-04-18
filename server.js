@@ -67,19 +67,19 @@ app.use('/api/factures', factureRoutes);
 // Route de santé pour vérifier que le serveur fonctionne
 app.get('/health', (req, res) => {
   res.json({
-<<<<<<< HEAD
+
     status: 'OK',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: process.env.NODE_ENV || 'development',
     pdfEngine: process.env.PDF_ENGINE || 'auto'
-=======
+
   status: 'OK',
   timestamp: new Date().toISOString(),
   uptime: process.uptime(),
   environment: process.env.NODE_ENV || 'development',
   pdfEngine: process.env.PDF_ENGINE || 'auto'
->>>>>>> 8570926ca00b0d83f8337284c19c68581ae6546e
+
   });
 });
 
