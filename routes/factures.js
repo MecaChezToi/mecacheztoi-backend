@@ -85,22 +85,7 @@ if (engine === 'pdfkit') {
     pdfBuffer = await renderLitePdf(html);
   }
 }
-      ]
-    });
-
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '0.5in',
-        right: '0.5in',
-        bottom: '0.5in',
-        left: '0.5in'
-      }
-    });
+   
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${(filename || 'facture.pdf').replace(/"/g, '')}"`);
