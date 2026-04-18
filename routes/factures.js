@@ -49,11 +49,11 @@ router.post('/render-pdf', [
 
   const { html, filename } = req.body;
 
-<<<<<<< HEAD
+
   const outName = (filename || 'facture.pdf').replace(/"/g, '');
 
   const tryPuppeteer = async () => {
-=======
+
   let browser = null;
   try {
 let pdfBuffer = null;
@@ -64,7 +64,7 @@ if (engine === 'pdfkit') {
   pdfBuffer = await renderLitePdf(html);
 } else {
   try {
->>>>>>> 8570926ca00b0d83f8337284c19c68581ae6546e
+
     const browser = await puppeteer.launch({
       headless: 'new',
       args: [
@@ -94,7 +94,7 @@ if (engine === 'pdfkit') {
     }
   };
 
-<<<<<<< HEAD
+
   const renderLitePdf = async () => {
     return await new Promise((resolve, reject) => {
       try {
@@ -116,11 +116,11 @@ if (engine === 'pdfkit') {
       } catch (e) {
         reject(e);
       }
-=======
+
     pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true
->>>>>>> 8570926ca00b0d83f8337284c19c68581ae6546e
+
     });
   };
 
