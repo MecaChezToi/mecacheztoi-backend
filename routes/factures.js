@@ -79,7 +79,8 @@ if (engine === 'pdfkit') {
     try {
       const page = await browser.newPage();
       await page.setContent(html, { waitUntil: 'networkidle0' });
-      return await page.pdf({
+
+      pdfBuffer = await page.pdf({
         format: 'A4',
         printBackground: true,
         margin: {
@@ -89,10 +90,15 @@ if (engine === 'pdfkit') {
           left: '0.5in'
         }
       });
+
+      } catch (e) {
+        console.error('Puppeteer error:', e);
+        pdfBuffer = await renderLitePdf(html);
+
     } finally {
       try { await browser.close(); } catch (e) {}
     }
-  };
+  
 
 
   const renderLitePdf = async () => {
