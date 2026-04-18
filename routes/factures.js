@@ -51,7 +51,15 @@ router.post('/render-pdf', [
 
   let browser = null;
   try {
-    browser = await puppeteer.launch({
+let pdfBuffer = null;
+
+const engine = (process.env.PDF_ENGINE || '').toLowerCase();
+
+if (engine === 'pdfkit') {
+  pdfBuffer = await renderLitePdf(html);
+} else {
+  try {
+    const browser = await puppeteer.launch({
       headless: 'new',
       args: [
         '--no-sandbox',
@@ -59,6 +67,24 @@ router.post('/render-pdf', [
         '--disable-dev-shm-usage',
         '--disable-accelerated-2d-canvas',
         '--disable-gpu'
+      ]
+    });
+
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+
+    pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true
+    });
+
+    await browser.close();
+
+  } catch (e) {
+    console.error('Puppeteer failed → fallback PDFKit', e);
+    pdfBuffer = await renderLitePdf(html);
+  }
+}
       ]
     });
 
