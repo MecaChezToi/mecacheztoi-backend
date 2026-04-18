@@ -54,18 +54,11 @@ router.post('/render-pdf', [
 
   const tryPuppeteer = async () => {
 
-  let browser = null;
-  try {
-let pdfBuffer = null;
+ let browser = null;
+try {
+  let pdfBuffer = null;
 
-const engine = (process.env.PDF_ENGINE || '').toLowerCase();
-
-if (engine === 'pdfkit') {
-  pdfBuffer = await renderLitePdf(html);
-} else {
-  try {
-
-    const browser = await puppeteer.launch({
+    browser = await puppeteer.launch({
       headless: 'new',
       args: [
         '--no-sandbox',
@@ -76,7 +69,7 @@ if (engine === 'pdfkit') {
       ]
     });
 
-    try {
+
       const page = await browser.newPage();
       await page.setContent(html, { waitUntil: 'networkidle0' });
 
@@ -91,13 +84,15 @@ if (engine === 'pdfkit') {
         }
       });
 
-      } catch (e) {
-        console.error('Puppeteer error:', e);
-        pdfBuffer = await renderLitePdf(html);
+       return pdfBuffer;
 
-    } finally {
-      try { await browser.close(); } catch (e) {}
-    }
+ } catch (e) {
+  console.error('Puppeteer error:', e);
+  return await renderLitePdf(html);
+} finally {
+  try { await browser.close(); } catch (e) {}
+}
+};
   
 
 
@@ -150,6 +145,7 @@ if (engine === 'pdfkit') {
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
+);
 
 
 router.post('/send-email', [
