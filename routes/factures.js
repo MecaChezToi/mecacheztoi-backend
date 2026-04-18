@@ -125,29 +125,20 @@ if (engine === 'pdfkit') {
 
  
 
+let pdfBuffer = null;
+const engine = (process.env.PDF_ENGINE || '').toLowerCase();
+
+if (engine === 'pdfkit') {
+  pdfBuffer = await renderLitePdf();
+} else {
   try {
-    let pdfBuffer = null;
-    const engine = (process.env.PDF_ENGINE || '').toLowerCase();
-    if (engine === 'pdfkit') {
-      pdfBuffer = await renderLitePdf();
-    } else {
-      try {
-        pdfBuffer = await tryPuppeteer();
-      } catch (e) {
-        console.error('Puppeteer PDF failed, fallback PDFKit:', e);
-        pdfBuffer = await renderLitePdf();
-      }
-    }
-
-    await browser.close();
-
+    pdfBuffer = await tryPuppeteer();
   } catch (e) {
-    console.error('Puppeteer failed → fallback PDFKit', e);
-    pdfBuffer = await renderLitePdf(html);
+    console.error('Puppeteer PDF failed, fallback PDFKit:', e);
+    pdfBuffer = await renderLitePdf();
   }
 }
    
-
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${outName}"`);
     return res.send(pdfBuffer);
@@ -159,7 +150,7 @@ if (engine === 'pdfkit') {
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
-});
+
 
 router.post('/send-email', [
   body('to').isEmail(),
