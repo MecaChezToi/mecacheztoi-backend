@@ -123,12 +123,7 @@ if (engine === 'pdfkit') {
         reject(e);
       }
 
-    pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true
-
-    });
-  };
+ 
 
   try {
     let pdfBuffer = null;
