@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Meca'Chez Toi - Test Factures</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button.danger:hover {
+            background: #c82333;
+        }
+        button.success {
+            background: #28a745;
+        }
+        button.success:hover {
+            background: #218838;
+        }
+        .response {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { border-left: 4px solid #28a745; }
+        .error { border-left: 4px solid #dc3545; }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .facture-item {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            background: #f9f9f9;
+        }
+        .facture-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .facture-number {
+            font-weight: bold;
+            color: #2c5a57;
+        }
+        .facture-status {
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-brouillon { background-color: #ffc107; color: #333; }
+        .status-envoyee { background-color: #17a2b8; color: white; }
+        .status-payee { background-color: #28a745; color: white; }
+        .status-annulee { background-color: #dc3545; color: white; }
+        .ligne-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        .ligne-actions {
+            display: flex;
+            gap: 5px;
+        }
+        .btn-small {
+            padding: 4px 8px;
+            font-size: 11px;
+            border-radius: 3px;
+            border: none;
+            cursor: pointer;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <h1>API Meca'Chez Toi - Test Factures</h1>
+    
+    <!-- Statistiques -->
+    <div class="container">
+        <h2>Statistiques</h2>
+        <button onclick="loadStats()">Rafraîchir les stats</button>
+        <div id="statsContainer" class="stats-grid"></div>
+    </div>
+
+    <div class="grid">
+        <!-- Formulaire de création de facture -->
+        <div class="container">
+            <h2>Créer une facture</h2>
+            <form id="factureForm">
+                <div class="form-group">
+                    <label for="client_id">Client ID:</label>
+                    <input type="number" id="client_id" name="client_id" required>
+                </div>
+                <div class="form-group">
+                    <label for="rdv_id">RDV ID (optionnel):</label>
+                    <input type="number" id="rdv_id" name="rdv_id">
+                </div>
+                <div class="form-group">
+                    <label for="taux_tva">Taux TVA (%):</label>
+                    <input type="number" id="taux_tva" name="taux_tva" value="20" step="0.1" min="0" max="100">
+                </div>
+                <div class="form-group">
+                    <label for="remise_ht">Remise HT (°):</label>
+                    <input type="number" id="remise_ht" name="remise_ht" value="0" step="0.01" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="date_echeance">Date d'échéance:</label>
+                    <input type="date" id="date_echeance" name="date_echeance">
+                </div>
+                <div class="form-group">
+                    <label for="conditions_paiement">Conditions de paiement:</label>
+                    <textarea id="conditions_paiement" name="conditions_paiement" rows="2">Paiement à 30 jours</textarea>
+                </div>
+                <div class="form-group">
+                    <label for="notes">Notes:</label>
+                    <textarea id="notes" name="notes" rows="3"></textarea>
+                </div>
+                <button type="submit">Créer la facture</button>
+            </form>
+            <div id="factureResponse" class="response" style="display: none;"></div>
+        </div>
+
+        <!-- Formulaire d'ajout de ligne -->
+        <div class="container">
+            <h2>Ajouter une ligne de facture</h2>
+            <form id="ligneForm">
+                <div class="form-group">
+                    <label for="ligne_facture_id">Facture ID:</label>
+                    <input type="number" id="ligne_facture_id" name="facture_id" required>
+                </div>
+                <div class="form-group">
+                    <label for="ligne_description">Description:</label>
+                    <input type="text" id="ligne_description" name="description" required>
+                </div>
+                <div class="form-group">
+                    <label for="ligne_quantite">Quantité:</label>
+                    <input type="number" id="ligne_quantite" name="quantite" value="1" step="0.1" min="0.1" required>
+                </div>
+                <div class="form-group">
+                    <label for="ligne_prix_unitaire_ht">Prix unitaire HT (°):</label>
+                    <input type="number" id="ligne_prix_unitaire_ht" name="prix_unitaire_ht" value="0" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="ligne_taux_tva">Taux TVA (%):</label>
+                    <input type="number" id="ligne_taux_tva" name="taux_tva" value="20" step="0.1" min="0" max="100">
+                </div>
+                <button type="submit">Ajouter la ligne</button>
+            </form>
+            <div id="ligneResponse" class="response" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Tests API -->
+    <div class="container">
+        <h2>Tests API Factures</h2>
+        <button onclick="testHealth()">Tester santé du serveur</button>
+        <button onclick="getAllFactures()">Toutes les factures</button>
+        <button onclick="getEntrepriseInfo()">Infos entreprise</button>
+        <button onclick="getFactureStats()">Stats factures</button>
+        <div id="apiResponse" class="response" style="display: none;"></div>
+    </div>
+
+    <!-- Liste des factures -->
+    <div class="container">
+        <h2>Factures existantes</h2>
+        <button onclick="refreshFactures()">Rafraîchir</button>
+        <div id="factureList"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+
+        // Charger les factures au démarrage
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshFactures();
+            loadStats();
+        });
+
+        // Formulaire de création de facture
+        document.getElementById('factureForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            try {
+                const response = await fetch(`${API_BASE}/factures`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                displayResponse('factureResponse', result, response.status);
+                
+                if (result.success) {
+                    e.target.reset();
+                    refreshFactures();
+                }
+            } catch (error) {
+                displayResponse('factureResponse', { error: error.message }, 500);
+            }
+        });
+
+        // Formulaire d'ajout de ligne
+        document.getElementById('ligneForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            const factureId = data.facture_id;
+            
+            try {
+                const response = await fetch(`${API_BASE}/factures/${factureId}/lignes`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                displayResponse('ligneResponse', result, response.status);
+                
+                if (result.success) {
+                    e.target.reset();
+                    refreshFactures();
+                }
+            } catch (error) {
+                displayResponse('ligneResponse', { error: error.message }, 500);
+            }
+        });
+
+        async function testHealth() {
+            try {
+                const response = await fetch('http://localhost:3000/health');
+                const data = await response.json();
+                displayResponse('apiResponse', data, response.status);
+            } catch (error) {
+                displayResponse('apiResponse', { error: error.message }, 500);
+            }
+        }
+
+        async function getAllFactures() {
+            try {
+                const response = await fetch(`${API_BASE}/factures`);
+                const data = await response.json();
+                displayResponse('apiResponse', data, response.status);
+            } catch (error) {
+                displayResponse('apiResponse', { error: error.message }, 500);
+            }
+        }
+
+        async function getEntrepriseInfo() {
+            try {
+                const response = await fetch(`${API_BASE}/factures/entreprise/info`);
+                const data = await response.json();
+                displayResponse('apiResponse', data, response.status);
+            } catch (error) {
+                displayResponse('apiResponse', { error: error.message }, 500);
+            }
+        }
+
+        async function getFactureStats() {
+            try {
+                const response = await fetch(`${API_BASE}/factures/stats`);
+                const data = await response.json();
+                displayResponse('apiResponse', data, response.status);
+            } catch (error) {
+                displayResponse('apiResponse', { error: error.message }, 500);
+            }
+        }
+
+        async function refreshFactures() {
+            try {
+                const response = await fetch(`${API_BASE}/factures`);
+                const data = await response.json();
+                
+                const listDiv = document.getElementById('factureList');
+                if (data.success && data.data.length > 0) {
+                    listDiv.innerHTML = data.data.map(facture => `
+                        <div class="facture-item">
+                            <div class="facture-header">
+                                <div>
+                                    <span class="facture-number">${facture.numero}</span><br>
+                                    <small>${facture.client_prenom} ${facture.client_nom}</small><br>
+                                    <small>${new Date(facture.date_emission).toLocaleDateString('fr-FR')}</small>
+                                </div>
+                                <div>
+                                    <span class="facture-status status-${facture.statut}">${facture.statut}</span><br>
+                                    <strong>${facture.montant_ttc.toFixed(2)}°</strong>
+                                </div>
+                            </div>
+                            <div style="margin-top: 10px;">
+                                <button class="btn-small" onclick="viewFacture(${facture.id})">Voir</button>
+                                <button class="btn-small" onclick="generatePDF(${facture.id})">PDF</button>
+                                <button class="btn-small" onclick="updateStatus(${facture.id}, 'envoyée')">Envoyer</button>
+                                <button class="btn-small" onclick="updateStatus(${facture.id}, 'payée')">Payer</button>
+                                <button class="btn-small danger" onclick="deleteFacture(${facture.id})">Supprimer</button>
+                            </div>
+                            <div id="lignes-${facture.id}" style="margin-top: 10px; display: none;"></div>
+                        </div>
+                    `).join('');
+                } else {
+                    listDiv.innerHTML = '<p>Aucune facture trouvée</p>';
+                }
+            } catch (error) {
+                document.getElementById('factureList').innerHTML = '<p>Erreur de chargement</p>';
+            }
+        }
+
+        async function viewFacture(id) {
+            try {
+                const response = await fetch(`${API_BASE}/factures/${id}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const lignesDiv = document.getElementById(`lignes-${id}`);
+                    lignesDiv.style.display = lignesDiv.style.display === 'none' ? 'block' : 'none';
+                    
+                    if (lignesDiv.style.display === 'block') {
+                        lignesDiv.innerHTML = `
+                            <h4>Lignes de facture:</h4>
+                            ${data.data.lignes.map(ligne => `
+                                <div class="ligne-item">
+                                    <div>
+                                        ${ligne.description} - ${ligne.quantite} x ${ligne.prix_unitaire_ht.toFixed(2)}°
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <strong>${ligne.total_ht.toFixed(2)}°</strong>
+                                        <div class="ligne-actions">
+                                            <button class="btn-small danger" onclick="deleteLigne(${ligne.id})">Supprimer</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('') || '<p>Aucune ligne</p>'}
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+            }
+        }
+
+        async function generatePDF(id) {
+            try {
+                const response = await fetch(`${API_BASE}/factures/${id}/pdf`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `facture_${id}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    
+                    alert('PDF généré et téléchargé!');
+                } else {
+                    const error = await response.json();
+                    alert('Erreur: ' + error.message);
+                }
+            } catch (error) {
+                alert('Erreur: ' + error.message);
+            }
+        }
+
+        async function updateStatus(id, status) {
+            try {
+                const response = await fetch(`${API_BASE}/factures/${id}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ statut: status })
+                });
+                
+                const data = await response.json();
+                displayResponse('apiResponse', data, response.status);
+                refreshFactures();
+            } catch (error) {
+                displayResponse('apiResponse', { error: error.message }, 500);
+            }
+        }
+
+        async function deleteFacture(id) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer cette facture?')) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/factures/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                displayResponse('apiResponse', data, response.status);
+                refreshFactures();
+            } catch (error) {
+                displayResponse('apiResponse', { error: error.message }, 500);
+            }
+        }
+
+        async function deleteLigne(ligneId) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer cette ligne?')) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/factures/lignes/${ligneId}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                displayResponse('apiResponse', data, response.status);
+                refreshFactures();
+            } catch (error) {
+                displayResponse('apiResponse', { error: error.message }, 500);
+            }
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_BASE}/factures/stats`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const stats = data.data;
+                    document.getElementById('statsContainer').innerHTML = `
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.total_factures}</div>
+                            <div class="stat-label">Total factures</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.factures_payees}</div>
+                            <div class="stat-label">Factures payées</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.ca_encaisse.toFixed(0)}°</div>
+                            <div class="stat-label">CA encaissé</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.a_encaisser.toFixed(0)}°</div>
+                            <div class="stat-label">À encaisser</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Erreur stats:', error);
+            }
+        }
+
+        function displayResponse(elementId, data, status) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `response ${status >= 200 && status < 300 ? 'success' : 'error'}`;
+            element.textContent = JSON.stringify(data, null, 2);
+        }
+    </script>
+</body>
+</html>

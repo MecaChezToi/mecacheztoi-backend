@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API Meca'Chez Toi</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .response {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success { border-left: 4px solid #28a745; }
+        .error { border-left: 4px solid #dc3545; }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>API Meca'Chez Toi - Interface de Test</h1>
+    
+    <div class="grid">
+        <!-- Formulaire de création de RDV -->
+        <div class="container">
+            <h2>Créer un rendez-vous</h2>
+            <form id="rdvForm">
+                <div class="form-group">
+                    <label for="client_nom">Nom du client:</label>
+                    <input type="text" id="client_nom" name="client_nom" required>
+                </div>
+                <div class="form-group">
+                    <label for="client_prenom">Prénom du client:</label>
+                    <input type="text" id="client_prenom" name="client_prenom" required>
+                </div>
+                <div class="form-group">
+                    <label for="telephone">Téléphone:</label>
+                    <input type="tel" id="telephone" name="telephone" placeholder="0612345678" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email (optionnel):</label>
+                    <input type="email" id="email" name="email">
+                </div>
+                <div class="form-group">
+                    <label for="vehicule">Véhicule:</label>
+                    <input type="text" id="vehicule" name="vehicule" placeholder="Peugeot 308 2020" required>
+                </div>
+                <div class="form-group">
+                    <label for="service_id">Service:</label>
+                    <select id="service_id" name="service_id" required>
+                        <option value="">Choisir un service...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="date">Date:</label>
+                    <input type="date" id="date" name="date" required>
+                </div>
+                <div class="form-group">
+                    <label for="heure">Heure:</label>
+                    <input type="time" id="heure" name="heure" min="08:00" max="18:00" required>
+                </div>
+                <div class="form-group">
+                    <label for="adresse">Adresse:</label>
+                    <input type="text" id="adresse" name="adresse" placeholder="14 rue Gambetta, Lyon" required>
+                </div>
+                <div class="form-group">
+                    <label for="notes">Notes (optionnel):</label>
+                    <textarea id="notes" name="notes" rows="3"></textarea>
+                </div>
+                <button type="submit">Créer le rendez-vous</button>
+            </form>
+            <div id="rdvResponse" class="response" style="display: none;"></div>
+        </div>
+
+        <!-- Tests API -->
+        <div class="container">
+            <h2>Tests API</h2>
+            <button onclick="testHealth()">Tester santé du serveur</button>
+            <button onclick="getServices()">Récupérer les services</button>
+            <button onclick="getTodayRdvs()">RDV du jour</button>
+            <button onclick="getAllRdvs()">Tous les RDV</button>
+            <div id="apiResponse" class="response" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Liste des rendez-vous -->
+    <div class="container">
+        <h2>Rendez-vous existants</h2>
+        <button onclick="refreshRdvs()">Rafraîchir</button>
+        <div id="rdvList"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+
+        // Charger les services au démarrage
+        document.addEventListener('DOMContentLoaded', function() {
+            loadServices();
+            setDefaultDate();
+            refreshRdvs();
+        });
+
+        function setDefaultDate() {
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('date').value = tomorrow.toISOString().split('T')[0];
+        }
+
+        async function loadServices() {
+            try {
+                const response = await fetch(`${API_BASE}/rdv/services/list`);
+                const data = await response.json();
+                
+                const select = document.getElementById('service_id');
+                select.innerHTML = '<option value="">Choisir un service...</option>';
+                
+                if (data.success) {
+                    data.data.forEach(service => {
+                        const option = document.createElement('option');
+                        option.value = service.id;
+                        option.textContent = `${service.nom} - ${service.prix}°`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Erreur chargement services:', error);
+            }
+        }
+
+        // Formulaire de création de RDV
+        document.getElementById('rdvForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            try {
+                const response = await fetch(`${API_BASE}/rdv`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                displayResponse('rdvResponse', result, response.status);
+                
+                if (result.success) {
+                    e.target.reset();
+                    setDefaultDate();
+                    refreshRdvs();
+                }
+            } catch (error) {
+                displayResponse('rdvResponse', { error: error.message }, 500);
+            }
+        });
+
+        async function testHealth() {
+            try {
+                const response = await fetch('http://localhost:3000/health');
+                const data = await response.json();
+                displayResponse('apiResponse', data, response.status);
+            } catch (error) {
+                displayResponse('apiResponse', { error: error.message }, 500);
+            }
+        }
+
+        async function getServices() {
+            try {
+                const response = await fetch(`${API_BASE}/rdv/services/list`);
+                const data = await response.json();
+                displayResponse('apiResponse', data, response.status);
+            } catch (error) {
+                displayResponse('apiResponse', { error: error.message }, 500);
+            }
+        }
+
+        async function getTodayRdvs() {
+            try {
+                const response = await fetch(`${API_BASE}/rdv?date=today`);
+                const data = await response.json();
+                displayResponse('apiResponse', data, response.status);
+            } catch (error) {
+                displayResponse('apiResponse', { error: error.message }, 500);
+            }
+        }
+
+        async function getAllRdvs() {
+            try {
+                const response = await fetch(`${API_BASE}/rdv`);
+                const data = await response.json();
+                displayResponse('apiResponse', data, response.status);
+            } catch (error) {
+                displayResponse('apiResponse', { error: error.message }, 500);
+            }
+        }
+
+        async function refreshRdvs() {
+            try {
+                const response = await fetch(`${API_BASE}/rdv`);
+                const data = await response.json();
+                
+                const listDiv = document.getElementById('rdvList');
+                if (data.success && data.data.length > 0) {
+                    listDiv.innerHTML = data.data.map(rdv => `
+                        <div style="border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 4px;">
+                            <strong>${rdv.client_prenom} ${rdv.client_nom}</strong><br>
+                            ${rdv.service_nom} - ${rdv.service_prix}°<br>
+                            ${rdv.date} à ${rdv.heure}<br>
+                            ${rdv.vehicule}<br>
+                            <span style="color: ${rdv.statut === 'confirmé' ? 'green' : 'orange'}">${rdv.statut}</span>
+                            <button onclick="updateStatus(${rdv.id}, 'terminé')" style="float: right; background: #28a745;">Terminer</button>
+                        </div>
+                    `).join('');
+                } else {
+                    listDiv.innerHTML = '<p>Aucun rendez-vous trouvé</p>';
+                }
+            } catch (error) {
+                document.getElementById('rdvList').innerHTML = '<p>Erreur de chargement</p>';
+            }
+        }
+
+        async function updateStatus(id, status) {
+            try {
+                const response = await fetch(`${API_BASE}/rdv/${id}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ statut: status })
+                });
+                
+                const data = await response.json();
+                displayResponse('apiResponse', data, response.status);
+                refreshRdvs();
+            } catch (error) {
+                displayResponse('apiResponse', { error: error.message }, 500);
+            }
+        }
+
+        function displayResponse(elementId, data, status) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `response ${status >= 200 && status < 300 ? 'success' : 'error'}`;
+            element.textContent = JSON.stringify(data, null, 2);
+        }
+    </script>
+</body>
+</html>
