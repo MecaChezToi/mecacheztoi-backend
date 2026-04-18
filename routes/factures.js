@@ -7,6 +7,7 @@ const path = require('path');
 const { body, validationResult } = require('express-validator');
 const puppeteer = require('puppeteer');
 const nodemailer = require('nodemailer');
+const PDFDocument = require('pdfkit');
 
 // Configuration de multer pour l'upload de logo
 const storage = multer.diskStorage({
@@ -48,9 +49,10 @@ router.post('/render-pdf', [
 
   const { html, filename } = req.body;
 
-  let browser = null;
-  try {
-    browser = await puppeteer.launch({
+  const outName = (filename || 'facture.pdf').replace(/"/g, '');
+
+  const tryPuppeteer = async () => {
+    const browser = await puppeteer.launch({
       headless: 'new',
       args: [
         '--no-sandbox',
@@ -61,33 +63,72 @@ router.post('/render-pdf', [
       ]
     });
 
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+    try {
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: 'networkidle0' });
+      return await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: {
+          top: '0.5in',
+          right: '0.5in',
+          bottom: '0.5in',
+          left: '0.5in'
+        }
+      });
+    } finally {
+      try { await browser.close(); } catch (e) {}
+    }
+  };
 
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '0.5in',
-        right: '0.5in',
-        bottom: '0.5in',
-        left: '0.5in'
+  const renderLitePdf = async () => {
+    return await new Promise((resolve, reject) => {
+      try {
+        const doc = new PDFDocument({ size: 'A4', margin: 36 });
+        const chunks = [];
+        doc.on('data', c => chunks.push(c));
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', reject);
+
+        doc.fontSize(18).text('Facture / Devis', { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(10).fillColor('#444').text(`Document: ${outName}`);
+        doc.moveDown();
+        doc.fontSize(11).fillColor('#111').text('Contenu HTML non rendu (mode compatible).');
+        doc.fontSize(10).fillColor('#444').text('Le PDF complet (mise en page) nécessite un navigateur headless.');
+        doc.moveDown();
+        doc.fontSize(9).fillColor('#666').text('Astuce: Utiliser un hébergement avec support Chromium complet (ou activer la génération PDF HTML côté autre service).');
+        doc.end();
+      } catch (e) {
+        reject(e);
       }
     });
+  };
+
+  try {
+    let pdfBuffer = null;
+    const engine = (process.env.PDF_ENGINE || '').toLowerCase();
+    if (engine === 'pdfkit') {
+      pdfBuffer = await renderLitePdf();
+    } else {
+      try {
+        pdfBuffer = await tryPuppeteer();
+      } catch (e) {
+        console.error('Puppeteer PDF failed, fallback PDFKit:', e);
+        pdfBuffer = await renderLitePdf();
+      }
+    }
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${(filename || 'facture.pdf').replace(/"/g, '')}"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${outName}"`);
     return res.send(pdfBuffer);
   } catch (error) {
     console.error('Erreur POST /api/factures/render-pdf:', error);
     return res.status(500).json({
       success: false,
-      message: 'Erreur lors de la génération du PDF'
+      message: 'Erreur lors de la génération du PDF',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
-  } finally {
-    if (browser) {
-      try { await browser.close(); } catch (e) {}
-    }
   }
 });
 
@@ -96,7 +137,7 @@ router.post('/send-email', [
   body('subject').isString().isLength({ min: 1, max: 200 }),
   body('message').optional().isString().isLength({ min: 0, max: 200000 }),
   body('html').optional().isString().isLength({ min: 0, max: 200000 }),
-  body('attachmentBase64').optional().isString().isLength({ min: 0, max: 20000000 }),
+  body('attachmentBase64').optional().isString().isLength({ min: 0, max: 30000000 }),
   body('attachmentFilename').optional().isString().isLength({ min: 1, max: 200 }),
 ], async (req, res) => {
   const errors = validationResult(req);
