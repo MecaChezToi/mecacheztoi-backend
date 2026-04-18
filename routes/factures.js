@@ -7,6 +7,7 @@ const path = require('path');
 const { body, validationResult } = require('express-validator');
 const puppeteer = require('puppeteer');
 const nodemailer = require('nodemailer');
+const PDFDocument = require('pdfkit');
 
 // Configuration de multer pour l'upload de logo
 const storage = multer.diskStorage({
