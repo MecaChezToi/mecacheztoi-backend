@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
 set -e
 
-npx puppeteer browsers install chrome
+echo "INSTALL CHROME VIA PUPPETEER"
+
+npx --yes puppeteer@latest browsers install chrome
