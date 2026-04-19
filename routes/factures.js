@@ -79,7 +79,7 @@ browser = await puppeteer.launch({
     await page.setContent(html, { waitUntil: 'networkidle0' });
     await page.evaluateHandle('document.fonts.ready');
 
-    await page.emulateMediaType('screen');
+    await page.emulateMediaType('print');
   pdfBuffer = await page.pdf({
   format: 'A4',
   printBackground: true,
