@@ -117,9 +117,10 @@ try {
       } catch (e) {
         reject(e);
       }
+});
+ };
 
- 
-
+ try {
 let pdfBuffer = null;
 const engine = (process.env.PDF_ENGINE || '').toLowerCase();
 
@@ -136,16 +137,15 @@ if (engine === 'pdfkit') {
    
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${outName}"`);
-    return res.send(pdfBuffer);
-  } catch (error) {
-    console.error('Erreur POST /api/factures/render-pdf:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la génération du PDF',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-);
+} catch (error) {
+  console.error('Erreur POST /api/factures/render-pdf:', error);
+  return res.status(500).json({
+    success: false,
+    message: 'Erreur lors de la génération du PDF',
+    error: process.env.NODE_ENV === 'development' ? error.message : undefined
+  });
+}
+});
 
 
 router.post('/send-email', [
