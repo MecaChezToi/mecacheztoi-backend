@@ -75,18 +75,23 @@ browser = await puppeteer.launch({
 });
 
     const page = await browser.newPage();
+    await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 1 });
     await page.setContent(html, { waitUntil: 'networkidle0' });
+    await page.evaluateHandle('document.fonts.ready');
 
-    pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '0.5in',
-        right: '0.5in',
-        bottom: '0.5in',
-        left: '0.5in'
-      }
-    });
+    await page.emulateMediaType('screen');
+  pdfBuffer = await page.pdf({
+  format: 'A4',
+  printBackground: true,
+  preferCSSPageSize: true,
+  margin: {
+    top: '0in',
+    right: '0in',
+    bottom: '0in',
+    left: '0in'
+  },
+  scale: 0.94
+});
 
     return pdfBuffer;
   } catch (e) {
