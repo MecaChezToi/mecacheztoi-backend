@@ -49,6 +49,9 @@ router.post('/render-pdf', [
 
   const { html, filename } = req.body;
 
+  console.log('RENDER PDF HIT');
+console.log('RENDER PDF filename:', filename);
+
 
   const outName = (filename || 'facture.pdf').replace(/"/g, '');
 
@@ -124,20 +127,35 @@ try {
 let pdfBuffer = null;
 const engine = (process.env.PDF_ENGINE || '').toLowerCase();
 
+console.log('RENDER PDF engine:', engine || 'auto');
+
+let pdfBuffer = null;
+const engine = (process.env.PDF_ENGINE || '').toLowerCase();
+
+console.log('RENDER PDF engine:', engine || 'auto');
+
 if (engine === 'pdfkit') {
+  console.log('PDFKIT START');
   pdfBuffer = await renderLitePdf();
+  console.log('PDFKIT DONE', pdfBuffer?.length);
 } else {
   try {
     pdfBuffer = await tryPuppeteer();
   } catch (e) {
     console.error('Puppeteer PDF failed, fallback PDFKit:', e);
+    console.log('PDFKIT START');
     pdfBuffer = await renderLitePdf();
+    console.log('PDFKIT DONE', pdfBuffer?.length);
   }
 }
-   
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${outName}"`);
-} catch (error) {
+
+console.log('RENDER PDF RESPONSE READY');
+
+res.setHeader('Content-Type', 'application/pdf');
+res.setHeader('Content-Disposition', `attachment; filename="${outName}"`);
+return res.send(pdfBuffer);
+
+ } catch (error) {
   console.error('Erreur POST /api/factures/render-pdf:', error);
   return res.status(500).json({
     success: false,
