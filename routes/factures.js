@@ -60,15 +60,17 @@ console.log('RENDER PDF filename:', filename);
   let pdfBuffer = null;
 
   try {
- browser = await puppeteer.launch({
-  headless: 'new',
-executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
-args: [
+browser = await puppeteer.launch({
+  headless: true,
+  executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
+  args: [
     '--no-sandbox',
     '--disable-setuid-sandbox',
     '--disable-dev-shm-usage',
     '--disable-accelerated-2d-canvas',
-    '--disable-gpu'
+    '--disable-gpu',
+    '--no-zygote',
+    '--single-process'
   ]
 });
 
