@@ -125,25 +125,14 @@ try {
 
  try {
 let pdfBuffer = null;
-const engine = (process.env.PDF_ENGINE || '').toLowerCase();
 
-console.log('RENDER PDF engine:', engine || 'auto');
-
-console.log('RENDER PDF engine:', engine || 'auto');
-
-if (engine === 'pdfkit') {
-  console.log('PDFKIT START');
-  pdfBuffer = await renderLitePdf();
-  console.log('PDFKIT DONE', pdfBuffer?.length);
-} else {
-  try {
-    pdfBuffer = await tryPuppeteer();
-  } catch (e) {
-    console.error('Puppeteer PDF failed, fallback PDFKit:', e);
-    console.log('PDFKIT START');
-    pdfBuffer = await renderLitePdf();
-    console.log('PDFKIT DONE', pdfBuffer?.length);
-  }
+try {
+  console.log('PUPPETEER START');
+  pdfBuffer = await tryPuppeteer();
+  console.log('PUPPETEER DONE', pdfBuffer?.length);
+} catch (e) {
+  console.error('Puppeteer failed:', e);
+  throw e;
 }
 
 console.log('RENDER PDF RESPONSE READY');
