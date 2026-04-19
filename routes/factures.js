@@ -129,9 +129,6 @@ const engine = (process.env.PDF_ENGINE || '').toLowerCase();
 
 console.log('RENDER PDF engine:', engine || 'auto');
 
-let pdfBuffer = null;
-const engine = (process.env.PDF_ENGINE || '').toLowerCase();
-
 console.log('RENDER PDF engine:', engine || 'auto');
 
 if (engine === 'pdfkit') {
