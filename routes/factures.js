@@ -56,11 +56,10 @@ console.log('RENDER PDF filename:', filename);
   const outName = (filename || 'facture.pdf').replace(/"/g, '');
 
   const tryPuppeteer = async () => {
-
- let browser = null;
-try {
+  let browser = null;
   let pdfBuffer = null;
 
+  try {
     browser = await puppeteer.launch({
       headless: 'new',
       args: [
@@ -72,29 +71,27 @@ try {
       ]
     });
 
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
 
-      const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'networkidle0' });
+    pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '0.5in',
+        right: '0.5in',
+        bottom: '0.5in',
+        left: '0.5in'
+      }
+    });
 
-      pdfBuffer = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: {
-          top: '0.5in',
-          right: '0.5in',
-          bottom: '0.5in',
-          left: '0.5in'
-        }
-      });
-
-       return pdfBuffer;
-
- } catch (e) {
-  console.error('Puppeteer error:', e);
-  return await renderLitePdf(html);
-} finally {
-  try { await browser.close(); } catch (e) {}
-}
+    return pdfBuffer;
+  } catch (e) {
+    console.error('PUPPETEER CRASH:', e);
+    throw e;
+  } finally {
+    try { await browser.close(); } catch (e) {}
+  }
 };
   
 
