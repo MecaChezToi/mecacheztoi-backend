@@ -212,10 +212,16 @@ ON CONFLICT DO NOTHING;
 
 -- Insertion des services par défaut
 INSERT INTO services (nom, description, prix, duree_minutes) VALUES
-('Vidange & Filtres', 'Vidange complète avec remplacement filtre à huile, filtre à air et filtre habitacle', 89.00, 60),
-('Freins & Pneumatiques', 'Diagnostic et réparation du système de freinage, vérification pneus', 149.00, 120),
-('Diagnostic complet', 'Diagnostic électronique complet du véhicule', 39.00, 45),
-('Batterie & Électricité', 'Test batterie, diagnostic système électrique', 79.00, 60),
-('Refroidissement', 'Vidange circuit refroidissement, contrôle radiateur', 99.00, 90),
-('Éclairage & Optiques', 'Remplacement ampoules, réglage feux', 59.00, 45)
+('Vidange simple', 'Vidange complète avec remplacement filtre à huile', 99.00, 45),
+('Entretien intermédiaire', 'Vidange + filtres complémentaires (air, habitacle)', 149.00, 75),
+('Gros entretien', 'Entretien complet selon préconisations constructeur', 199.00, 120),
+('Révision constructeur', 'Selon véhicule et préconisations constructeur', 0.00, 120),
+('Plaquettes avant', 'Remplacement plaquettes de frein avant', 109.00, 60),
+('Plaquettes arrière', 'Remplacement plaquettes de frein arrière', 109.00, 60),
+('Disques + plaquettes', 'Remplacement disques et plaquettes', 329.00, 105),
+('Diagnostic complet', 'Diagnostic électronique complet du véhicule', 39.00, 30),
+('Batterie', 'Test et remplacement batterie (sur devis selon véhicule)', 0.00, 60),
+('Ampoules / éclairage', 'Remplacement ampoules, réglage feux (sur devis)', 0.00, 45),
+('Bougies d''allumage', 'Remplacement bougies (jeu de 4)', 89.00, 60),
+('Refroidissement', 'Contrôle et vidange circuit de refroidissement (sur devis)', 0.00, 90)
 ON CONFLICT DO NOTHING;
